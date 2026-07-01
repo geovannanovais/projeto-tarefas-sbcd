@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowOS - Sistema Operacional de Trabalho</title>
+    <!-- Tailwind CSS para estilização moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter para tipografia limpa -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome para ícones premium -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar para visual premium */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden">
+
+    <!-- Header Principal (Estilo Dashboard de OS) -->
+    <header class="bg-slate-900/80 border-b border-slate-800/80 backdrop-blur-md px-6 py-4 flex flex-col md:flex-row gap-4 justify-between items-center shrink-0 z-10">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20">
+                <i class="fa-solid fa-square-kanban text-2xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">FlowOS</h1>
+                <p class="text-xs text-slate-400">Sistema Operacional de Fluxo de Trabalho</p>
+            </div>
+        </div>
+
+        <!-- Indicador de Status, Usuário e Menu de Acesso -->
+        <div class="flex flex-wrap items-center gap-3">
+            <div id="connectionStatus" class="flex items-center gap-2 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-medium">
+                <span class="h-2 w-2 rounded-full bg-amber-500 animate-pulse" id="statusDot"></span>
+                <span id="statusText" class="text-slate-400">Conectando ao banco de dados...</span>
+            </div>
+            <div class="text-xs bg-slate-800 border border-slate-700/50 px-3 py-1.5 rounded-lg max-w-[150px] truncate" title="Seu ID de Usuário">
+                <span class="text-slate-500">ID:</span> <span id="userIdDisplay" class="font-mono text-indigo-400">carregando...</span>
+            </div>
+            <button onclick="toggleRightSidebar()" class="lg:hidden bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 p-2 rounded-xl transition-all" title="Alternar Menu de Listas">
+                <i class="fa-solid fa-bars text-sm"></i>
+            </button>
+            <button onclick="openModal('newTaskModal')" class="bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-semibold text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 shadow-lg shadow-indigo-500/10 active:scale-95">
+                <i class="fa-solid fa-plus text-xs"></i> Nova Tarefa
+            </button>
+        </div>
+    </header>
+
+    <!-- Painel de Controle (Filtros e Estatísticas Rápidas) -->
+    <section class="bg-slate-950 px-6 py-4 border-b border-slate-900 shrink-0">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+            
+            <!-- Buscador e Filtros -->
+            <div class="flex flex-1 flex-col sm:flex-row gap-3">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                    <input type="text" id="searchBar" oninput="filterTasks()" placeholder="Buscar tarefas pelo título ou descrição..." class="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-sm transition-all text-slate-200">
+                </div>
+                <select id="filterPriority" onchange="filterTasks()" class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-300 focus:border-indigo-500 outline-none cursor-pointer">
+                    <option value="all">Todas Prioridades</option>
+                    <option value="alta">Alta Prioridade</option>
+                    <option value="media">Média Prioridade</option>
+                    <option value="baixa">Baixa Prioridade</option>
+                </select>
+            </div>
+
+            <!-- Mini Métricas de Desempenho -->
+            <div class="flex flex-wrap gap-3 items-center justify-start lg:justify-end text-xs">
+                <div class="bg-slate-900/40 border border-slate-900/80 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                    <div class="h-6 w-6 rounded-md bg-rose-500/10 flex items-center justify-center text-rose-400 text-[10px]">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                    </div>
+                    <div>
+                        <div id="statPending" class="font-bold text-slate-200">0</div>
+                    </div>
+                </div>
+                <div class="bg-slate-900/40 border border-slate-900/80 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                    <div class="h-6 w-6 rounded-md bg-sky-500/10 flex items-center justify-center text-sky-400 text-[10px]">
+                        <i class="fa-solid fa-rotate"></i>
+                    </div>
+                    <div>
+                        <div id="statInProgress" class="font-bold text-slate-200">0</div>
+                    </div>
+                </div>
+                <div class="bg-slate-900/40 border border-slate-900/80 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                    <div class="h-6 w-6 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-400 text-[10px]">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                    <div>
+                        <div id="statStandby" class="font-bold text-slate-200">0</div>
+                    </div>
+                </div>
+                <div class="bg-slate-900/40 border border-slate-900/80 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                    <div class="h-6 w-6 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-[10px]">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div>
+                        <div id="statCompleted" class="font-bold text-slate-200">0</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Corpo Principal com Espaço para o Board (Esquerda) e Sidebar Menu (Direita) -->
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- Quadro de Trabalho Principal (Kanban Board) -->
+        <main class="flex-1 overflow-x-auto p-6 bg-slate-950 transition-all duration-300">
+            <div id="boardContainer" class="flex gap-6 h-full min-w-[1200px] max-w-[1600px] mx-auto transition-all duration-300">
+                
+                <!-- Coluna 1: TAREFAS PENDENTES IMPORTANTES -->
+                <div id="column-container-pendente" class="flex-1 flex flex-col bg-slate-900/35 border border-slate-900 rounded-2xl p-4 overflow-hidden transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-rose-500/10">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-2.5 w-2.5 rounded-full bg-rose-500 shadow-md shadow-rose-500/50"></span>
+                            <h2 class="font-bold text-xs tracking-wide uppercase text-slate-200">Pendentes Importantes</h2>
+                        </div>
+                        <span id="count-pending" class="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-pending" class="flex-1 overflow-y-auto space-y-3 pr-1" ondragover="allowDrop(event)" ondrop="drop(event, 'pendente')">
+                        <!-- Cards dinâmicos inseridos aqui -->
+                    </div>
+                </div>
+
+                <!-- Coluna 2: ATIVIDADES EM PROCESSO -->
+                <div id="column-container-processo" class="flex-1 flex flex-col bg-slate-900/35 border border-slate-900 rounded-2xl p-4 overflow-hidden transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-sky-500/10">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-2.5 w-2.5 rounded-full bg-sky-500 shadow-md shadow-sky-500/50"></span>
+                            <h2 class="font-bold text-xs tracking-wide uppercase text-slate-200">Em Processo</h2>
+                        </div>
+                        <span id="count-processo" class="bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-processo" class="flex-1 overflow-y-auto space-y-3 pr-1" ondragover="allowDrop(event)" ondrop="drop(event, 'processo')">
+                        <!-- Cards dinâmicos inseridos aqui -->
+                    </div>
+                </div>
+
+                <!-- Coluna 3: ATIVIDADES EM STAND BY -->
+                <div id="column-container-standby" class="flex-1 flex flex-col bg-slate-900/35 border border-slate-900 rounded-2xl p-4 overflow-hidden transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-amber-500/10">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-2.5 w-2.5 rounded-full bg-amber-500 shadow-md shadow-amber-500/50"></span>
+                            <h2 class="font-bold text-xs tracking-wide uppercase text-slate-200">Em Stand By</h2>
+                        </div>
+                        <span id="count-standby" class="bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-standby" class="flex-1 overflow-y-auto space-y-3 pr-1" ondragover="allowDrop(event)" ondrop="drop(event, 'standby')">
+                        <!-- Cards dinâmicos inseridos aqui -->
+                    </div>
+                </div>
+
+                <!-- Coluna 4: CONCLUÍDO -->
+                <div id="column-container-concluido" class="flex-1 flex flex-col bg-slate-900/35 border border-slate-900 rounded-2xl p-4 overflow-hidden transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b border-emerald-500/10">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/50"></span>
+                            <h2 class="font-bold text-xs tracking-wide uppercase text-slate-200">Concluído</h2>
+                        </div>
+                        <span id="count-concluido" class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-concluido" class="flex-1 overflow-y-auto space-y-3 pr-1" ondragover="allowDrop(event)" ondrop="drop(event, 'concluido')">
+                        <!-- Cards dinâmicos inseridos aqui -->
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- MENU LATERAL DIREITO (Acesso e Controle de Tipo de Lista) -->
+        <aside id="rightSidebar" class="fixed inset-y-0 right-0 z-20 w-72 bg-slate-900 border-l border-slate-800 p-5 flex flex-col gap-5 transition-transform duration-300 transform translate-x-full lg:translate-x-0 lg:static lg:z-0 lg:bg-slate-900/35 shrink-0">
+            <div class="flex items-center justify-between lg:justify-start gap-2 border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-list-check text-indigo-400 text-lg"></i>
+                    <h3 class="font-bold text-sm tracking-wider uppercase text-slate-100">Visualizar Listas</h3>
+                </div>
+                <button onclick="toggleRightSidebar()" class="lg:hidden text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-chevron-right text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Navegadores de Visualização com Botões de Ação Dinâmicos -->
+            <div class="flex-1 flex flex-col gap-2">
+                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest px-2 mb-1">Listas de Fluxos</p>
+                
+                <!-- Ver Tudo -->
+                <button onclick="selectView('all')" id="btn-view-all" class="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-indigo-600/10 text-indigo-300 border border-indigo-500/30 font-medium text-xs transition-all duration-200 hover:bg-indigo-600/20">
+                    <span class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-grip text-indigo-400"></i>
+                        <span>Todas as Listas</span>
+                    </span>
+                    <span id="total-tasks-badge" class="bg-indigo-500/20 text-indigo-300 text-[10px] font-semibold px-2 py-0.5 rounded-md">0</span>
+                </button>
+
+                <!-- Pendentes -->
+                <button onclick="selectView('pendente')" id="btn-view-pendente" class="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-slate-950 hover:bg-slate-800/60 border border-transparent text-slate-400 hover:text-slate-200 font-medium text-xs transition-all duration-200">
+                    <span class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-circle-exclamation text-rose-500"></i>
+                        <span>Pendentes Importantes</span>
+                    </span>
+                    <span id="menu-badge-pending" class="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-semibold px-2 py-0.5 rounded-md">0</span>
+                </button>
+
+                <!-- Processo -->
+                <button onclick="selectView('processo')" id="btn-view-processo" class="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-slate-950 hover:bg-slate-800/60 border border-transparent text-slate-400 hover:text-slate-200 font-medium text-xs transition-all duration-200">
+                    <span class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-rotate text-sky-500"></i>
+                        <span>Em Processo</span>
+                    </span>
+                    <span id="menu-badge-processo" class="bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[10px] font-semibold px-2 py-0.5 rounded-md">0</span>
+                </button>
+
+                <!-- Stand By -->
+                <button onclick="selectView('standby')" id="btn-view-standby" class="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-slate-950 hover:bg-slate-800/60 border border-transparent text-slate-400 hover:text-slate-200 font-medium text-xs transition-all duration-200">
+                    <span class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-hourglass-half text-amber-500"></i>
+                        <span>Em Stand By</span>
+                    </span>
+                    <span id="menu-badge-standby" class="bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-semibold px-2 py-0.5 rounded-md">0</span>
+                </button>
+
+                <!-- Concluído -->
+                <button onclick="selectView('concluido')" id="btn-view-concluido" class="w-full flex items-center justify-between px-3 py-3 rounded-xl bg-slate-950 hover:bg-slate-800/60 border border-transparent text-slate-400 hover:text-slate-200 font-medium text-xs transition-all duration-200">
+                    <span class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-check-double text-emerald-500"></i>
+                        <span>Concluído</span>
+                    </span>
+                    <span id="menu-badge-concluido" class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold px-2 py-0.5 rounded-md">0</span>
+                </button>
+            </div>
+
+            <!-- Rodapé do Menu com Atalhos e Informações -->
+            <div class="border-t border-slate-800 pt-4 flex flex-col gap-3">
+                <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Taxa de Sucesso</div>
+                        <div id="completionRateText" class="text-xs font-semibold text-slate-200">0% completo</div>
+                    </div>
+                </div>
+
+                <button onclick="openModal('newTaskModal')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 border border-slate-700 transition-colors">
+                    <i class="fa-solid fa-plus"></i> Adicionar à Lista Focada
+                </button>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Modal: Adicionar Nova Tarefa -->
+    <div id="newTaskModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative m-4">
+            <button onclick="closeModal('newTaskModal')" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-folder-plus text-indigo-400"></i> Criar Novo Fluxo de Trabalho
+            </h3>
+            
+            <form id="taskForm" onsubmit="handleCreateTask(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="taskTitle">Título da Atividade</label>
+                    <input type="text" id="taskTitle" required placeholder="Ex: Desenhar wireframes do dashboard" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="taskDesc">Descrição / Detalhes</label>
+                    <textarea id="taskDesc" rows="3" placeholder="Insira o escopo e detalhes importantes sobre este fluxo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-colors resize-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="taskPriority">Prioridade</label>
+                        <select id="taskPriority" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none focus:border-indigo-500 transition-colors">
+                            <option value="alta" class="text-rose-400 font-bold">Alta</option>
+                            <option value="media" class="text-amber-400" selected>Média</option>
+                            <option value="baixa" class="text-sky-400">Baixa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="taskDate">Prazo Limite</label>
+                        <input type="date" id="taskDate" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none focus:border-indigo-500 transition-colors">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="taskStatus">Estágio Inicial</label>
+                    <select id="taskStatus" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none focus:border-indigo-500 transition-colors">
+                        <option value="pendente">Pendentes Importantes</option>
+                        <option value="processo">Atividades em Processo</option>
+                        <option value="standby">Atividades em Stand By</option>
+                    </select>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('newTaskModal')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-sm transition-all">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-semibold text-sm transition-all shadow-md shadow-indigo-500/10">Adicionar Tarefa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Atividade -->
+    <div id="editTaskModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative m-4">
+            <button onclick="closeModal('editTaskModal')" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-amber-400"></i> Atualizar Informações
+            </h3>
+            
+            <form id="editTaskForm" onsubmit="handleUpdateTask(event)" class="space-y-4">
+                <input type="hidden" id="editTaskId">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="editTaskTitle">Título da Atividade</label>
+                    <input type="text" id="editTaskTitle" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="editTaskDesc">Descrição / Detalhes</label>
+                    <textarea id="editTaskDesc" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-colors resize-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="editTaskPriority">Prioridade</label>
+                        <select id="editTaskPriority" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none focus:border-indigo-500 transition-colors">
+                            <option value="alta">Alta</option>
+                            <option value="media">Média</option>
+                            <option value="baixa">Baixa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="editTaskDate">Prazo Limite</label>
+                        <input type="date" id="editTaskDate" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-300 outline-none focus:border-indigo-500 transition-colors">
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('editTaskModal')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-sm transition-all">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold text-sm transition-all shadow-md shadow-amber-500/10">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Customizado de Confirmação (Substitui confirm do navegador) -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative text-center m-4">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-rose-500/10 text-rose-500 mb-4 text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2">Excluir Atividade</h3>
+            <p class="text-xs text-slate-400 mb-6">Você tem certeza que deseja remover esta atividade do seu fluxo de trabalho? Esta ação não pode ser desfeita.</p>
+            <div class="flex justify-center gap-3">
+                <button id="cancelConfirmBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition-all">Cancelar</button>
+                <button id="okConfirmBtn" class="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-semibold text-xs transition-all shadow-md shadow-rose-500/10">Sim, Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container Flutuante para Mensagens de Notificação (Toasts) -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+    <!-- Script Principal de Sincronização em Tempo Real e Gerenciamento -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis de ambiente fornecidas pela plataforma
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'flow-workos-app';
+        const rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        
+        let db = null;
+        let auth = null;
+        let currentUserId = null;
+        let unsubscribeTasks = null;
+        let allTasks = []; // Estado local consolidado para filtragem em memória
+        let currentFilterView = 'all'; // 'all' | 'pendente' | 'processo' | 'standby' | 'concluido'
+
+        // Fallback local se o Firebase não estiver configurado perfeitamente na sandbox
+        let isLocalMode = false;
+
+        async function initializeDatabase() {
+            try {
+                if (!rawConfig) {
+                    throw new Error("Configuração Firebase ausente no ambiente. Ativando modo local estruturado.");
+                }
+
+                const firebaseConfig = JSON.parse(rawConfig);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                updateStatus('Conectando e Autenticando...', 'amber');
+
+                // Autenticação robusta seguindo as regras de segurança prioritárias
+                const customToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                
+                if (customToken) {
+                    await signInWithCustomToken(auth, customToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUserId = user.uid;
+                        document.getElementById('userIdDisplay').textContent = currentUserId;
+                        updateStatus('Online - Sincronizado', 'emerald');
+                        showToast('Autenticado com sucesso!', 'success');
+                        listenToTasks();
+                    } else {
+                        updateStatus('Desconectado', 'rose');
+                    }
+                });
+
+            } catch (err) {
+                console.error("Firebase Auth/Firestore initialization failed:", err);
+                isLocalMode = true;
+                currentUserId = 'local-user-' + Math.random().toString(36).substr(2, 9);
+                document.getElementById('userIdDisplay').textContent = currentUserId + " (Local)";
+                updateStatus('Modo Local (Offline)', 'amber');
+                showToast('Usando modo de persistência local.', 'info');
+                loadTasksLocally();
+            }
+        }
+
+        // Sincronização em tempo real das tarefas usando caminhos estritos (RULE 1)
+        function listenToTasks() {
+            if (isLocalMode || !db || !currentUserId) return;
+
+            // Caminho público conforme as regras de segurança recomendadas
+            const tasksQuery = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+
+            updateStatus('Sincronizando tarefas...', 'amber');
+
+            // Ouvindo modificações em tempo real com callback de erro obrigatório
+            unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
+                const tasks = [];
+                snapshot.forEach((doc) => {
+                    tasks.push({ id: doc.id, ...doc.data() });
+                });
+                
+                allTasks = tasks;
+                renderBoard(allTasks);
+                updateStatus('Sincronizado', 'emerald');
+            }, (error) => {
+                console.error("Erro na escuta Firestore:", error);
+                showToast('Falha na sincronização do banco de dados.', 'danger');
+                updateStatus('Erro na Sincronização', 'rose');
+            });
+        }
+
+        // Recuperar dados locais em caso de modo Offline
+        function loadTasksLocally() {
+            const raw = localStorage.getItem(`flowos_tasks_${appId}`);
+            allTasks = raw ? JSON.parse(raw) : getMockData();
+            renderBoard(allTasks);
+        }
+
+        function saveTasksLocally() {
+            localStorage.setItem(`flowos_tasks_${appId}`, JSON.stringify(allTasks));
+            renderBoard(allTasks);
+        }
+
+        // Estrutura de exemplo para iniciar o board vazio ou com dados iniciais limpos
+        function getMockData() {
+            return [
+                {
+                    id: "mock-1",
+                    title: "Definição do escopo estratégico do FlowOS",
+                    description: "Reunião de alinhamento estratégico com o time operacional para determinar as principais entregas deste ciclo operacional.",
+                    priority: "alta",
+                    dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                    status: "pendente",
+                    createdAt: Date.now(),
+                    createdBy: "flow-default"
+                },
+                {
+                    id: "mock-2",
+                    title: "Desenvolvimento de APIs de Integração",
+                    description: "Criar barramento de integração entre canais parceiros e sistema ERP de cobranças.",
+                    priority: "media",
+                    dueDate: new Date(Date.now() + 172800000).toISOString().split('T')[0],
+                    status: "processo",
+                    createdAt: Date.now(),
+                    createdBy: "flow-default"
+                },
+                {
+                    id: "mock-3",
+                    title: "Validação do Design de Interfaces",
+                    description: "Submeter nova interface do dashboard principal para aprovação de usabilidade.",
+                    priority: "baixa",
+                    dueDate: new Date(Date.now() + 259200000).toISOString().split('T')[0],
+                    status: "standby",
+                    createdAt: Date.now(),
+                    createdBy: "flow-default"
+                }
+            ];
+        }
+
+        // Selecionar visualização a partir do menu lateral direito
+        window.selectView = function(view) {
+            currentFilterView = view;
+            
+            // Lista de identificadores de botões e contêineres de colunas
+            const views = ['all', 'pendente', 'processo', 'standby', 'concluido'];
+            
+            views.forEach(v => {
+                const btn = document.getElementById(`btn-view-${v}`);
+                if (btn) {
+                    if (v === view) {
+                        btn.className = "w-full flex items-center justify-between px-3 py-3 rounded-xl bg-indigo-600/10 text-indigo-300 border border-indigo-500/30 font-medium text-xs transition-all duration-200";
+                    } else {
+                        btn.className = "w-full flex items-center justify-between px-3 py-3 rounded-xl bg-slate-950 hover:bg-slate-800/60 border border-transparent text-slate-400 hover:text-slate-200 font-medium text-xs transition-all duration-200";
+                    }
+                }
+            });
+
+            // Ajustar o contêiner de largura do grid dinamicamente
+            const boardContainer = document.getElementById('boardContainer');
+            if (view === 'all') {
+                boardContainer.style.minWidth = "1200px";
+            } else {
+                boardContainer.style.minWidth = "100%";
+            }
+
+            // Aplicar visibilidade nas colunas do quadro
+            views.filter(v => v !== 'all').forEach(v => {
+                const colEl = document.getElementById(`column-container-${v}`);
+                if (colEl) {
+                    if (view === 'all' || view === v) {
+                        colEl.classList.remove('hidden');
+                        colEl.classList.add('flex');
+                    } else {
+                        colEl.classList.remove('flex');
+                        colEl.classList.add('hidden');
+                    }
+                }
+            });
+
+            // Fechar sidebar no celular após selecionar uma visualização
+            if (window.innerWidth < 1024) {
+                toggleRightSidebar();
+            }
+
+            filterTasks();
+        };
+
+        // Criar Atividade / Fluxo
+        async function handleCreateTask(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('taskTitle').value.trim();
+            const description = document.getElementById('taskDesc').value.trim();
+            const priority = document.getElementById('taskPriority').value;
+            const dueDate = document.getElementById('taskDate').value;
+            const status = document.getElementById('taskStatus').value;
+
+            if (!title || !dueDate) {
+                showToast("Por favor, preencha o título e a data de entrega.", "warning");
+                return;
+            }
+
+            const newTask = {
+                title,
+                description,
+                priority,
+                dueDate,
+                status,
+                createdAt: Date.now(),
+                createdBy: currentUserId
+            };
+
+            if (isLocalMode) {
+                newTask.id = "local-" + Date.now();
+                allTasks.push(newTask);
+                saveTasksLocally();
+                showToast("Tarefa criada localmente!", "success");
+            } else {
+                try {
+                    const tasksCol = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+                    await addDoc(tasksCol, newTask);
+                    showToast("Atividade cadastrada com sucesso!", "success");
+                } catch (err) {
+                    console.error("Erro ao salvar:", err);
+                    showToast("Erro ao sincronizar tarefa com banco online.", "danger");
+                }
+            }
+
+            document.getElementById('taskForm').reset();
+            closeModal('newTaskModal');
+        }
+
+        // Atualizar Status (Mudar de coluna ou "Ticar" como Concluído)
+        window.changeTaskStatus = async function(taskId, newStatus) {
+            if (isLocalMode) {
+                allTasks = allTasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t);
+                saveTasksLocally();
+                showToast(`Atividade movida para: ${newStatus.toUpperCase()}`, "success");
+            } else {
+                try {
+                    const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId);
+                    await updateDoc(taskRef, { status: newStatus });
+                    showToast(`Fluxo atualizado!`, "success");
+                } catch (err) {
+                    console.error("Erro ao atualizar status:", err);
+                    showToast("Erro ao tentar mudar status.", "danger");
+                }
+            }
+        };
+
+        // Editar uma Atividade
+        window.openEditModal = function(taskId) {
+            const task = allTasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            document.getElementById('editTaskId').value = task.id;
+            document.getElementById('editTaskTitle').value = task.title;
+            document.getElementById('editTaskDesc').value = task.description || '';
+            document.getElementById('editTaskPriority').value = task.priority;
+            document.getElementById('editTaskDate').value = task.dueDate;
+
+            openModal('editTaskModal');
+        };
+
+        async function handleUpdateTask(e) {
+            e.preventDefault();
+            const taskId = document.getElementById('editTaskId').value;
+            const title = document.getElementById('editTaskTitle').value.trim();
+            const description = document.getElementById('editTaskDesc').value.trim();
+            const priority = document.getElementById('editTaskPriority').value;
+            const dueDate = document.getElementById('editTaskDate').value;
+
+            if (isLocalMode) {
+                allTasks = allTasks.map(t => t.id === taskId ? { ...t, title, description, priority, dueDate } : t);
+                saveTasksLocally();
+                showToast("Atualizado com sucesso localmente!", "success");
+            } else {
+                try {
+                    const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId);
+                    await updateDoc(taskRef, { title, description, priority, dueDate });
+                    showToast("Tarefa atualizada e sincronizada!", "success");
+                } catch (err) {
+                    console.error("Erro ao salvar edição:", err);
+                    showToast("Erro de sincronização.", "danger");
+                }
+            }
+            closeModal('editTaskModal');
+        }
+
+        // Excluir Atividade - Utilizando o Modal de Confirmação customizado (Seguindo as regras de iFrame)
+        window.deleteTask = function(taskId) {
+            const confirmModal = document.getElementById('confirmModal');
+            const okBtn = document.getElementById('okConfirmBtn');
+            const cancelBtn = document.getElementById('cancelConfirmBtn');
+
+            // Mostrar modal com transição suave
+            confirmModal.classList.remove('hidden');
+            setTimeout(() => confirmModal.classList.add('opacity-100'), 10);
+
+            // Handler para confirmação positiva
+            const handleConfirm = async () => {
+                if (isLocalMode) {
+                    allTasks = allTasks.filter(t => t.id !== taskId);
+                    saveTasksLocally();
+                    showToast("Tarefa removida localmente.", "info");
+                } else {
+                    try {
+                        const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId);
+                        await deleteDoc(taskRef);
+                        showToast("Atividade removida com sucesso.", "success");
+                    } catch (err) {
+                        console.error("Erro ao deletar:", err);
+                        showToast("Erro ao deletar do servidor.", "danger");
+                    }
+                }
+                closeConfirmModal();
+            };
+
+            // Handler para cancelamento
+            const handleCancel = () => {
+                closeConfirmModal();
+            };
+
+            // Helpers para limpar listeners anteriores
+            const cleanUpListeners = () => {
+                okBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+
+            const closeConfirmModal = () => {
+                confirmModal.classList.remove('opacity-100');
+                setTimeout(() => confirmModal.classList.add('hidden'), 300);
+                cleanUpListeners();
+            };
+
+            okBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+        };
+
+        // Renderizar Quadro Principal
+        function renderBoard(tasksToRender) {
+            // Limpar colunas
+            const colPending = document.getElementById('col-pending');
+            const colProcesso = document.getElementById('col-processo');
+            const colStandby = document.getElementById('col-standby');
+            const colConcluido = document.getElementById('col-concluido');
+
+            colPending.innerHTML = '';
+            colProcesso.innerHTML = '';
+            colStandby.innerHTML = '';
+            colConcluido.innerHTML = '';
+
+            // Contadores reais baseados em todas as tarefas totais
+            let counts = { pendente: 0, processo: 0, standby: 0, concluido: 0 };
+
+            // Filtragem e mapeamento inteligente em memória
+            allTasks.forEach(task => {
+                if (task.status === 'pendente') counts.pendente++;
+                else if (task.status === 'processo') counts.processo++;
+                else if (task.status === 'standby') counts.standby++;
+                else if (task.status === 'concluido') counts.concluido++;
+            });
+
+            tasksToRender.forEach(task => {
+                const card = createTaskCard(task);
+                if (task.status === 'pendente') {
+                    colPending.appendChild(card);
+                } else if (task.status === 'processo') {
+                    colProcesso.appendChild(card);
+                } else if (task.status === 'standby') {
+                    colStandby.appendChild(card);
+                } else if (task.status === 'concluido') {
+                    colConcluido.appendChild(card);
+                }
+            });
+
+            // Atualizar badges das colunas
+            document.getElementById('count-pending').textContent = counts.pendente;
+            document.getElementById('count-processo').textContent = counts.processo;
+            document.getElementById('count-standby').textContent = counts.standby;
+            document.getElementById('count-concluido').textContent = counts.concluido;
+
+            // Atualizar estatísticas superiores
+            document.getElementById('statPending').textContent = counts.pendente;
+            document.getElementById('statInProgress').textContent = counts.processo;
+            document.getElementById('statStandby').textContent = counts.standby;
+            document.getElementById('statCompleted').textContent = counts.concluido;
+
+            // Atualizar Badges do Menu Lateral Direito
+            const totalTasks = allTasks.length;
+            document.getElementById('total-tasks-badge').textContent = totalTasks;
+            document.getElementById('menu-badge-pending').textContent = counts.pendente;
+            document.getElementById('menu-badge-processo').textContent = counts.processo;
+            document.getElementById('menu-badge-standby').textContent = counts.standby;
+            document.getElementById('menu-badge-concluido').textContent = counts.concluido;
+
+            // Calcular taxa de conclusão
+            const rate = totalTasks > 0 ? Math.round((counts.concluido / totalTasks) * 100) : 0;
+            document.getElementById('completionRateText').textContent = `${rate}% concluído`;
+        }
+
+        // Criar elemento HTML para o card da Atividade
+        function createTaskCard(task) {
+            const card = document.createElement('div');
+            card.className = "group relative bg-slate-900 border border-slate-800 hover:border-slate-700 p-4 rounded-xl shadow-md transition-all duration-300 hover:translate-y-[-2px] flex flex-col gap-3";
+            card.draggable = true;
+            card.dataset.id = task.id;
+            card.ondragstart = (e) => drag(e);
+
+            // Cores de prioridade
+            let priorityBadgeColor = "text-sky-400 bg-sky-500/10 border-sky-500/20";
+            if (task.priority === 'alta') {
+                priorityBadgeColor = "text-rose-400 bg-rose-500/10 border-rose-500/20 font-bold";
+            } else if (task.priority === 'media') {
+                priorityBadgeColor = "text-amber-400 bg-amber-500/10 border-amber-500/20";
+            }
+
+            // Identificar prazos atrasados ou próximos (apenas se não estiver concluído)
+            let dateAlert = "";
+            if (task.status !== 'concluido') {
+                const today = new Date().toISOString().split('T')[0];
+                if (task.dueDate < today) {
+                    dateAlert = "text-rose-400 font-bold animate-pulse";
+                } else if (task.dueDate === today) {
+                    dateAlert = "text-amber-400 font-bold";
+                } else {
+                    dateAlert = "text-slate-400";
+                }
+            } else {
+                dateAlert = "text-slate-500 line-through";
+            }
+
+            // Formatação amigável para a data
+            const dateParts = task.dueDate.split('-');
+            const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : task.dueDate;
+
+            // Estado de "ticado" (concluído)
+            const isCompleted = task.status === 'concluido';
+            const textClass = isCompleted ? 'line-through text-slate-500' : 'text-slate-100';
+            const descClass = isCompleted ? 'line-through text-slate-600' : 'text-slate-400';
+
+            // Montar ações rápidas de movimento de coluna
+            let columnActions = '';
+            if (task.status === 'pendente') {
+                columnActions = `
+                    <button onclick="changeTaskStatus('${task.id}', 'processo')" class="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-sky-400" title="Iniciar Atividade">
+                        <i class="fa-solid fa-play"></i> Iniciar
+                    </button>
+                    <button onclick="changeTaskStatus('${task.id}', 'standby')" class="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-amber-400" title="Colocar em Standby">
+                        <i class="fa-solid fa-pause"></i> Pausar
+                    </button>
+                `;
+            } else if (task.status === 'processo') {
+                columnActions = `
+                    <button onclick="changeTaskStatus('${task.id}', 'pendente')" class="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-rose-400" title="Mudar para Pendente">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Pendente
+                    </button>
+                    <button onclick="changeTaskStatus('${task.id}', 'standby')" class="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-amber-400" title="Colocar em Standby">
+                        <i class="fa-solid fa-pause"></i> Pausar
+                    </button>
+                `;
+            } else if (task.status === 'standby') {
+                columnActions = `
+                    <button onclick="changeTaskStatus('${task.id}', 'processo')" class="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-sky-400" title="Retomar Atividade">
+                        <i class="fa-solid fa-play"></i> Retomar
+                    </button>
+                `;
+            } else if (isCompleted) {
+                columnActions = `
+                    <button onclick="changeTaskStatus('${task.id}', 'pendente')" class="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-rose-400" title="Reabrir tarefa">
+                        <i class="fa-solid fa-rotate-left"></i> Reabrir
+                    </button>
+                `;
+            }
+
+            card.innerHTML = `
+                <!-- Cabeçalho do Card -->
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="toggleComplete('${task.id}', ${isCompleted})" class="h-5 w-5 rounded-md border-2 border-slate-700 flex items-center justify-center transition-all ${isCompleted ? 'bg-emerald-500 border-emerald-500 text-slate-950' : 'hover:border-indigo-500 bg-slate-950 text-transparent'}" title="Marcar como Concluído">
+                            <i class="fa-solid fa-check text-[10px] font-black"></i>
+                        </button>
+                        <span class="text-xs px-2.5 py-0.5 rounded-full border ${priorityBadgeColor} capitalize">
+                            ${task.priority}
+                        </span>
+                    </div>
+                    
+                    <!-- Ações Administrativas -->
+                    <div class="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="openEditModal('${task.id}')" class="h-7 w-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                            <i class="fa-solid fa-pen text-xs"></i>
+                        </button>
+                        <button onclick="deleteTask('${task.id}')" class="h-7 w-7 rounded-lg bg-slate-800/80 hover:bg-rose-900/30 flex items-center justify-center text-slate-400 hover:text-rose-400 transition-colors">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Conteúdo -->
+                <div>
+                    <h4 class="font-semibold text-sm leading-tight transition-colors ${textClass}">${escapeHtml(task.title)}</h4>
+                    ${task.description ? `<p class="text-xs mt-1.5 line-clamp-2 ${descClass}">${escapeHtml(task.description)}</p>` : ''}
+                </div>
+
+                <!-- Rodapé -->
+                <div class="mt-auto pt-3 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 text-xs ${dateAlert}">
+                        <i class="fa-regular fa-calendar-check text-[11px]"></i>
+                        <span>${formattedDate}</span>
+                    </div>
+                    
+                    <!-- Botões Rápidos de Mudança de Coluna -->
+                    <div class="flex items-center gap-1">
+                        ${columnActions}
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Filtragem Inteligente em Memória (Sem quebrar a regra de sem consultas complexas)
+        window.filterTasks = function() {
+            const queryText = document.getElementById('searchBar').value.toLowerCase().trim();
+            const priorityFilter = document.getElementById('filterPriority').value;
+
+            const filtered = allTasks.filter(task => {
+                const matchesQuery = queryText === '' || 
+                    task.title.toLowerCase().includes(queryText) || 
+                    (task.description && task.description.toLowerCase().includes(queryText));
+
+                const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+                
+                // Filtragem com base na visualização da coluna selecionada no menu lateral
+                const matchesView = currentFilterView === 'all' || task.status === currentFilterView;
+
+                return matchesQuery && matchesPriority && matchesView;
+            });
+
+            renderBoard(filtered);
+        };
+
+        // Alternar abertura do menu lateral no celular
+        window.toggleRightSidebar = function() {
+            const sidebar = document.getElementById('rightSidebar');
+            if (sidebar.classList.contains('translate-x-full')) {
+                sidebar.classList.remove('translate-x-full');
+                sidebar.classList.add('translate-x-0');
+            } else {
+                sidebar.classList.remove('translate-x-0');
+                sidebar.classList.add('translate-x-full');
+            }
+        };
+
+        // Função rápida para marcar como concluído ou reabrir ("ticar")
+        window.toggleComplete = function(taskId, isCompletedNow) {
+            const nextStatus = isCompletedNow ? 'pendente' : 'concluido';
+            changeTaskStatus(taskId, nextStatus);
+        };
+
+        // Status do App
+        function updateStatus(text, colorClass) {
+            const dot = document.getElementById('statusDot');
+            const label = document.getElementById('statusText');
+            
+            if (!dot || !label) return;
+            dot.className = "h-2 w-2 rounded-full animate-pulse";
+            if (colorClass === 'emerald') dot.classList.add('bg-emerald-500');
+            else if (colorClass === 'amber') dot.classList.add('bg-amber-500');
+            else if (colorClass === 'rose') dot.classList.add('bg-rose-500');
+
+            label.textContent = text;
+        }
+
+        // Prevenção simples contra injeção de scripts
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        // Gerenciamento de Modal Dinâmico
+        window.openModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+            }, 10);
+            
+            // Definir data mínima como hoje no formulário
+            if (modalId === 'newTaskModal') {
+                document.getElementById('taskDate').min = new Date().toISOString().split('T')[0];
+            }
+        };
+
+        window.closeModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('opacity-100');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        };
+
+        // Sistema de Toast Moderno (Substituto ao alert)
+        window.showToast = function(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let typeClasses = "bg-slate-900 text-slate-100 border-slate-700";
+            let icon = "fa-info-circle text-sky-400";
+
+            if (type === 'success') {
+                typeClasses = "bg-slate-900 border-emerald-500/20 text-emerald-100";
+                icon = "fa-circle-check text-emerald-400";
+            } else if (type === 'warning') {
+                typeClasses = "bg-slate-900 border-amber-500/20 text-amber-100";
+                icon = "fa-triangle-exclamation text-amber-400";
+            } else if (type === 'danger') {
+                typeClasses = "bg-slate-900 border-rose-500/20 text-rose-100";
+                icon = "fa-circle-exclamation text-rose-400";
+            }
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto ${typeClasses}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-base shrink-0"></i>
+                <span class="text-xs font-medium">${message}</span>
+            `;
+
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-10px]');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3500);
+        };
+
+        // Eventos de arrastar e soltar (Drag and Drop) para as Colunas
+        window.allowDrop = function(ev) {
+            ev.preventDefault();
+        };
+
+        window.drag = function(ev) {
+            ev.dataTransfer.setData("taskId", ev.target.dataset.id);
+        };
+
+        window.drop = function(ev, targetStatus) {
+            ev.preventDefault();
+            const taskId = ev.dataTransfer.getData("taskId");
+            if (taskId) {
+                changeTaskStatus(taskId, targetStatus);
+            }
+        };
+
+        // Registrando formulários no escopo global para que funcionem inline
+        window.handleCreateTask = handleCreateTask;
+        window.handleUpdateTask = handleUpdateTask;
+
+        // Ativação Inicial
+        window.onload = function() {
+            initializeDatabase();
+        };
+
+    </script>
+</body>
+</html>
