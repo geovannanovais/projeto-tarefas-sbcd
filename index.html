@@ -39,6 +39,10 @@
     <!-- Header Principal (Estilo Dashboard de OS) -->
     <header class="bg-slate-900/80 border-b border-slate-800/80 backdrop-blur-md px-6 py-4 flex flex-col md:flex-row gap-4 justify-between items-center shrink-0 z-10">
         <div class="flex items-center gap-3">
+            <!-- Botão de controle do menu esquerdo (mobile) -->
+            <button onclick="toggleLeftSidebar()" class="lg:hidden bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 p-2 rounded-xl transition-all" title="Links Rápidos">
+                <i class="fa-solid fa-link text-sm"></i>
+            </button>
             <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20">
                 <i class="fa-solid fa-square-kanban text-2xl text-white"></i>
             </div>
@@ -123,9 +127,37 @@
         </div>
     </section>
 
-    <!-- Corpo Principal com Espaço para o Board (Esquerda) e Sidebar Menu (Direita) -->
+    <!-- Corpo Principal com Espaço para os Menus Laterais e o Board central -->
     <div class="flex-1 flex overflow-hidden relative">
         
+        <!-- MENU LATERAL ESQUERDO (Links Rápidos) -->
+        <aside id="leftSidebar" class="fixed inset-y-0 left-0 z-20 w-64 bg-slate-900 border-r border-slate-800 p-5 flex flex-col gap-5 transition-transform duration-300 transform -translate-x-full lg:translate-x-0 lg:static lg:z-0 lg:bg-slate-900/35 shrink-0">
+            <div class="flex items-center justify-between lg:justify-start gap-2 border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-link text-indigo-400 text-lg"></i>
+                    <h3 class="font-bold text-sm tracking-wider uppercase text-slate-100">Links Rápidos</h3>
+                </div>
+                <button onclick="toggleLeftSidebar()" class="lg:hidden text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-chevron-left text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Lista de Links Rápidos -->
+            <div class="flex-1 flex flex-col gap-3 overflow-y-auto">
+                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest px-2">Suas Ferramentas</p>
+                <div id="quickLinksContainer" class="flex flex-col gap-2">
+                    <!-- Links dinâmicos injetados aqui -->
+                </div>
+            </div>
+
+            <!-- Botão para Adicionar Novo Link -->
+            <div class="border-t border-slate-800 pt-4">
+                <button onclick="openModal('newLinkModal')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 border border-slate-700 transition-colors">
+                    <i class="fa-solid fa-plus-circle"></i> Adicionar Link
+                </button>
+            </div>
+        </aside>
+
         <!-- Quadro de Trabalho Principal (Kanban Board) -->
         <main class="flex-1 overflow-x-auto p-6 bg-slate-950 transition-all duration-300">
             <div id="boardContainer" class="flex gap-6 h-full min-w-[1200px] max-w-[1600px] mx-auto transition-all duration-300">
@@ -369,6 +401,35 @@
         </div>
     </div>
 
+    <!-- Modal: Adicionar Novo Link -->
+    <div id="newLinkModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative m-4">
+            <button onclick="closeModal('newLinkModal')" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 transition-colors">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-link text-indigo-400"></i> Adicionar Link Rápido
+            </h3>
+            
+            <form id="linkForm" onsubmit="handleCreateLink(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="linkTitle">Título do Link</label>
+                    <input type="text" id="linkTitle" required placeholder="Ex: Notion da Empresa" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" for="linkUrl">Endereço URL</label>
+                    <input type="url" id="linkUrl" required placeholder="https://notion.so/..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none focus:border-indigo-500 transition-colors">
+                </div>
+
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('newLinkModal')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-sm transition-all">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-semibold text-sm transition-all shadow-md shadow-indigo-500/10">Adicionar Link</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Customizado de Confirmação (Substitui confirm do navegador) -->
     <div id="confirmModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl relative text-center m-4">
@@ -393,15 +454,29 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Variáveis de ambiente fornecidas pela plataforma
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'flow-workos-app';
-        const rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        // ID único do seu aplicativo (mantenha um ID exclusivo para isolar seus dados de outros testes)
+        const appId = 'bd-projeto-tarefas-sbcd'; 
+
+        // Suas credenciais reais do Firebase conectadas diretamente!
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Sl_pa0qdQUIIC3KyjSDz8hZtajvQ7yM",
+            authDomain: "bd-projeto-tarefas-sbcd.firebaseapp.com",
+            projectId: "bd-projeto-tarefas-sbcd",
+            storageBucket: "bd-projeto-tarefas-sbcd.firebasestorage.app",
+            messagingSenderId: "57998340901",
+            appId: "1:57998340901:web:7c2a53262b47ec64c0a0cc"
+        };
+        
+        // Transforma o objeto de credenciais em JSON String para que o motor do FlowOS leia perfeitamente
+        const rawConfig = JSON.stringify(firebaseConfig);
         
         let db = null;
         let auth = null;
         let currentUserId = null;
         let unsubscribeTasks = null;
+        let unsubscribeLinks = null;
         let allTasks = []; // Estado local consolidado para filtragem em memória
+        let allLinks = []; // Estado local consolidado dos links rápidos
         let currentFilterView = 'all'; // 'all' | 'pendente' | 'processo' | 'standby' | 'concluido'
 
         // Fallback local se o Firebase não estiver configurado perfeitamente na sandbox
@@ -420,11 +495,17 @@
 
                 updateStatus('Conectando e Autenticando...', 'amber');
 
-                // Autenticação robusta seguindo as regras de segurança prioritárias
-                const customToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                // Autenticação robusta seguindo as regras de segurança prioritárias com fallback
+                const customToken = typeof __initial_auth_token !== 'undefined' && __initial_auth_token ? __initial_auth_token : null;
                 
                 if (customToken) {
-                    await signInWithCustomToken(auth, customToken);
+                    try {
+                        await signInWithCustomToken(auth, customToken);
+                    } catch (tokenErr) {
+                        // Caso falhe por ser um projeto customizado (mismatch esperado), tenta login anônimo
+                        console.warn("Erro ao autenticar com token customizado (mismatch devido a chaves próprias). Tentando login anônimo...", tokenErr);
+                        await signInAnonymously(auth);
+                    }
                 } else {
                     await signInAnonymously(auth);
                 }
@@ -436,6 +517,7 @@
                         updateStatus('Online - Sincronizado', 'emerald');
                         showToast('Autenticado com sucesso!', 'success');
                         listenToTasks();
+                        listenToLinks();
                     } else {
                         updateStatus('Desconectado', 'rose');
                     }
@@ -449,6 +531,7 @@
                 updateStatus('Modo Local (Offline)', 'amber');
                 showToast('Usando modo de persistência local.', 'info');
                 loadTasksLocally();
+                loadLinksLocally();
             }
         }
 
@@ -478,6 +561,24 @@
             });
         }
 
+        // Sincronização em tempo real dos links rápidos (RULE 1)
+        function listenToLinks() {
+            if (isLocalMode || !db || !currentUserId) return;
+
+            const linksQuery = collection(db, 'artifacts', appId, 'public', 'data', 'links');
+
+            unsubscribeLinks = onSnapshot(linksQuery, (snapshot) => {
+                const links = [];
+                snapshot.forEach((doc) => {
+                    links.push({ id: doc.id, ...doc.data() });
+                });
+                allLinks = links;
+                renderLinks();
+            }, (error) => {
+                console.error("Erro na escuta Firestore Links:", error);
+            });
+        }
+
         // Recuperar dados locais em caso de modo Offline
         function loadTasksLocally() {
             const raw = localStorage.getItem(`flowos_tasks_${appId}`);
@@ -485,9 +586,20 @@
             renderBoard(allTasks);
         }
 
+        function loadLinksLocally() {
+            const raw = localStorage.getItem(`flowos_links_${appId}`);
+            allLinks = raw ? JSON.parse(raw) : getMockLinks();
+            renderLinks();
+        }
+
         function saveTasksLocally() {
             localStorage.setItem(`flowos_tasks_${appId}`, JSON.stringify(allTasks));
             renderBoard(allTasks);
+        }
+
+        function saveLinksLocally() {
+            localStorage.setItem(`flowos_links_${appId}`, JSON.stringify(allLinks));
+            renderLinks();
         }
 
         // Estrutura de exemplo para iniciar o board vazio ou com dados iniciais limpos
@@ -523,6 +635,14 @@
                     createdAt: Date.now(),
                     createdBy: "flow-default"
                 }
+            ];
+        }
+
+        function getMockLinks() {
+            return [
+                { id: "mock-link-1", title: "GitHub", url: "https://github.com" },
+                { id: "mock-link-2", title: "Figma Workspace", url: "https://figma.com" },
+                { id: "mock-link-3", title: "Notion Workspace", url: "https://notion.so" }
             ];
         }
 
@@ -617,6 +737,102 @@
 
             document.getElementById('taskForm').reset();
             closeModal('newTaskModal');
+        }
+
+        // Criar Link Rápido
+        window.handleCreateLink = async function(e) {
+            e.preventDefault();
+            const title = document.getElementById('linkTitle').value.trim();
+            const url = document.getElementById('linkUrl').value.trim();
+
+            if (!title || !url) return;
+
+            const newLink = {
+                title,
+                url,
+                createdAt: Date.now()
+            };
+
+            if (isLocalMode) {
+                newLink.id = "local-link-" + Date.now();
+                allLinks.push(newLink);
+                saveLinksLocally();
+                showToast("Link salvo localmente!", "success");
+            } else {
+                try {
+                    const linksCol = collection(db, 'artifacts', appId, 'public', 'data', 'links');
+                    await addDoc(linksCol, newLink);
+                    showToast("Link rápido adicionado!", "success");
+                } catch (err) {
+                    console.error("Erro ao salvar link:", err);
+                    showToast("Erro ao sincronizar link.", "danger");
+                }
+            }
+
+            document.getElementById('linkForm').reset();
+            closeModal('newLinkModal');
+        };
+
+        // Excluir Link Rápido
+        window.deleteLink = async function(linkId) {
+            if (isLocalMode) {
+                allLinks = allLinks.filter(l => l.id !== linkId);
+                saveLinksLocally();
+                showToast("Link removido localmente.", "info");
+            } else {
+                try {
+                    const linkRef = doc(db, 'artifacts', appId, 'public', 'data', 'links', linkId);
+                    await deleteDoc(linkRef);
+                    showToast("Link rápido removido.", "success");
+                } catch (err) {
+                    console.error("Erro ao deletar link:", err);
+                    showToast("Erro ao remover link do servidor.", "danger");
+                }
+            }
+        };
+
+        // Identificar ícone correspondente à URL
+        function getLinkIcon(url) {
+            const lowUrl = url.toLowerCase();
+            if (lowUrl.includes('github')) return 'fa-brands fa-github text-slate-300';
+            if (lowUrl.includes('figma')) return 'fa-brands fa-figma text-rose-400';
+            if (lowUrl.includes('notion')) return 'fa-solid fa-n text-slate-200';
+            if (lowUrl.includes('slack')) return 'fa-brands fa-slack text-purple-400';
+            if (lowUrl.includes('drive.google') || lowUrl.includes('google.com/drive')) return 'fa-brands fa-google-drive text-emerald-400';
+            if (lowUrl.includes('google')) return 'fa-brands fa-google text-blue-400';
+            if (lowUrl.includes('trello')) return 'fa-brands fa-trello text-sky-400';
+            return 'fa-solid fa-globe text-indigo-400';
+        }
+
+        // Renderizar Links Rápidos
+        function renderLinks() {
+            const container = document.getElementById('quickLinksContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (allLinks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-4 border border-dashed border-slate-800 rounded-xl">
+                        <p class="text-[10px] text-slate-500">Nenhum link cadastrado.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            allLinks.forEach(link => {
+                const item = document.createElement('div');
+                item.className = "group/link flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-950/50 hover:bg-slate-900 border border-slate-900 hover:border-slate-800 text-xs text-slate-300 transition-all duration-150 animate-fade-in";
+                item.innerHTML = `
+                    <a href="${escapeHtml(link.url)}" target="_blank" class="flex items-center gap-2.5 font-medium hover:text-white truncate flex-1">
+                        <i class="${getLinkIcon(link.url)} text-sm shrink-0"></i>
+                        <span class="truncate">${escapeHtml(link.title)}</span>
+                    </a>
+                    <button onclick="deleteLink('${link.id}')" class="opacity-0 group-hover/link:opacity-100 text-slate-500 hover:text-rose-400 transition-opacity p-1" title="Deletar Link">
+                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
         }
 
         // Atualizar Status (Mudar de coluna ou "Ticar" como Concluído)
@@ -785,7 +1001,7 @@
 
             // Calcular taxa de conclusão
             const rate = totalTasks > 0 ? Math.round((counts.concluido / totalTasks) * 100) : 0;
-            document.getElementById('completionRateText').textContent = `${rate}% concluído`;
+            document.getElementById('completionRateText').textContent = `${rate}% completo`;
         }
 
         // Criar elemento HTML para o card da Atividade
@@ -929,7 +1145,7 @@
             renderBoard(filtered);
         };
 
-        // Alternar abertura do menu lateral no celular
+        // Alternar abertura do menu lateral no celular (Direita)
         window.toggleRightSidebar = function() {
             const sidebar = document.getElementById('rightSidebar');
             if (sidebar.classList.contains('translate-x-full')) {
@@ -938,6 +1154,18 @@
             } else {
                 sidebar.classList.remove('translate-x-0');
                 sidebar.classList.add('translate-x-full');
+            }
+        };
+
+        // Alternar abertura do menu lateral no celular (Esquerda)
+        window.toggleLeftSidebar = function() {
+            const sidebar = document.getElementById('leftSidebar');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+            } else {
+                sidebar.classList.remove('translate-x-0');
+                sidebar.classList.add('-translate-x-full');
             }
         };
 
@@ -981,7 +1209,7 @@
                 modal.classList.add('opacity-100');
             }, 10);
             
-            // Definir data mínima como hoje no formulário
+            // Definir data mínima como hoje no formulário de tarefa
             if (modalId === 'newTaskModal') {
                 document.getElementById('taskDate').min = new Date().toISOString().split('T')[0];
             }
